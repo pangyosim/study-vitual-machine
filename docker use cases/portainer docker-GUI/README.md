@@ -30,7 +30,7 @@ docker run -d --name portainer -p 9000:9000 --restart=always -v /var/run/docker.
 * -d : 백그라운드모드
 * --name : 만드는 container 이름
 * -p [호스트포트]:[이미지포트]
-* --restart=always : 백그라운드에서도 실행
+* --restart=always : docker를 키고 끌 때 항상 같이 키고 끄는
 * -v [호스트폴더]:[container폴더] 
 ### 만들어진 192.168.56.1:9000으로 이동 후 ID,PW 등록 후 사용
 ![화면 캡처 2022-07-12 202047](https://user-images.githubusercontent.com/87213815/178478563-f3a3daf1-ee7c-4588-b77b-014c244396bc.png)
