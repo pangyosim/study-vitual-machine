@@ -26,6 +26,12 @@ echo "welcome docker world" > index.html
 ```
 ![화면 캡처 2022-07-16 163558](https://user-images.githubusercontent.com/87213815/179345294-5468a150-6f9e-4427-b778-bb326a494e9e.png)
 
+```
+# 만든 docker volume path 찾기 2
+docker volume inspect convol
+```
+<img src="https://user-images.githubusercontent.com/87213815/179345925-11a660f0-ac1a-4598-91f5-d601e0e42074.png" width="600" height="200">
+
 ****continaer의 index.html 파일위치 탐색****
 ```
 # 만들 웹 os docker container의 index.html 파일 위치 탐색
