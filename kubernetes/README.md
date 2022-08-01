@@ -56,5 +56,142 @@
     → 다수의 Container를 다수의 **node(Cluster)에 적절하게 분산 실행**하고, **원하는 상태로 실행상태를 유지해주고**, 다운타임 없이 **유동적으로 Scale을 확장/축소할 수 있게 도와준다.**
     
     → **배포(Deployment)/운영(Operation)/스케일링(Scaling)**
+* * *
+
+# Install kubernetes
+
+## **master | node1 | node2 | node3 작업**
+
+1. SWAP 기능 끄기
     
+    ```bash
+    swapoff -a
+    vi /etc/fstab
+    reboot
+    ```
+    
+    <img src = "https://user-images.githubusercontent.com/87213815/182152100-958c0d1c-5170-4332-b1c0-a2926513f53e.png" width="800" height="200">
+    
+    ```bash
+    modprobe br_netfilter
+    echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
+    ```
+    
+    ```bash
+    vi /etc/sysctl.conf
+    
+    # 내용추가
+    ----------------------------------------
+    net.bridge.bridge-nf-call-iptables = 1
+    net.bridge.bridge-nf-call-ip6tables = 1
+    ----------------------------------------
+    reboot
+    ```
+    
+    <img src = "https://user-images.githubusercontent.com/87213815/182152459-1922070e-34c6-4473-9212-fde28f357917.png" width="500" height="150">
+    
+    ```bash
+    # kubernetes repository 다운
+    cd /etc/yum.repos.d
+    wget http://down.cloudshell.kr/k8s/kubernetes.repo
+    ```
+    
+    ```
+    vi /usr/lib/systemd/system/docker.service
+    ExecStart=/usr/bin/dockerd 바로 뒤에 
+    ----------------------------------------
+    --exec-opt native.cgroupdriver=systemd
+    ----------------------------------------
+    를 삽입한다
+    ``` 
+    <img src = "https://user-images.githubusercontent.com/87213815/182152672-161b0c37-0363-4119-b6e1-a16db8c12314.png" width="500" height="300">
+    
+    ```
+    systemctl daemon-reload
+    systemctl restart docker
+    
+    # 확인
+    docker info | grep -i cgroup
+    ```
+    
+    <img src = "https://user-images.githubusercontent.com/87213815/182153051-cb986df6-e3d0-4031-94c5-1402f1aca632.png" width="800" height="80">
+    
+    ```
+    #kubernetes 설치
+    yum install -y kubelet-1.21.1-0 kubeadm-1.21.1-0 kubectl-1.21.1-0
+    systemctl daemon-reload
+    systemctl enable kubelet --now
+    ```
+    
+    ## **Master에서 작업 (Clustering 구축)**
+    
+    ```
+    #Clustering 구성하기 
+    kubeadm init --kubernetes-version=v1.21.1
+    
+    # Master API로 commands를 config 
+    mkdir -p $HOME/.kube
+    cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+    chown $(id -u):$(id -g) $HOME/.kube/config
+    
+    # 꼭 복사
+    ⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐
+    kubeadm join 10.0.2.12:6443 --token il46it.62rwg4lqjokztqbk \
+            --discovery-token-ca-cert-hash sha256:92001b9269af854651db34a3e1f7e4fd19c06803c53717b7dbc3df4323d09f77
+    ⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐
+    ```
+    
+    <img src = "https://user-images.githubusercontent.com/87213815/182153293-2dcbc123-ad1d-4530-bb49-4c3a8ee3d552.png" width="600" height="300">
+    
+    ```
+    # version 확인 (kubectl: 제어, kubeamd: 관리자, kubelet: )
+    kubectl version --short
+    kubeadm version -o yaml
+    kubelet --version
+    ```
+    
+    ```
+    #weave-net 설치
+    export kubever=$(kubectl version | base64 | tr -d '\n')
+    kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$kubever"
+    ```
+    
+    ![Untitled](https://user-images.githubusercontent.com/87213815/182153523-4c9727a4-9be8-46ef-8482-dc137ece9c73.png)
+
+    ```
+    kubectl get pods -A
+    kubectl get pod -n kube-system
+    ```
+    
+    <img src = "https://user-images.githubusercontent.com/87213815/182153615-29023137-188b-411b-b2c9-34544d532034.png" width="600" height="150">
+    
+    ```bash
+    kubectl get nodes
+    ```
+    
+    <img src = "https://user-images.githubusercontent.com/87213815/182153958-de074f38-597b-4a4f-b1c0-cbf1a4995629.png" width="500" height="50">
+    
+    # **node1 | node2 | node3 에서만 작업**
+    
+    ```bash
+    # node1, node2, node3 실행
+    kubeadm join 10.0.2.12:6443 --token il46it.62rwg4lqjokztqbk \
+            --discovery-token-ca-cert-hash sha256:92001b9269af854651db34a3e1f7e4fd19c06803c53717b7dbc3df4323d09f77
+    
+    # master에서 확인
+    kubectl get nodes
+    ```
+    
+    <img src = "https://user-images.githubusercontent.com/87213815/182154116-4ad78a53-98eb-4300-97b4-1fd71db4c5b8.png" width="500" height="100">
+    
+    **Kubernetes command**
+    - `kubeadm`: 클러스터를 부트스트랩하는 명령이다.
+    - `kubelet`: 클러스터의 모든 머신에서 실행되는 파드와 컨테이너 시작과 같은 작업을 수행하는 컴포넌트이다.
+    - `kubectl`: 클러스터와 통신하기 위한 커맨드 라인 유틸리티이다.
+
+
+
+
+
+
   
